@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% from "_macros.html" import meta, badges %}
+{# One item: plan it, move it, edit it. This is also the triage screen for inbox items. #}
+{% block content %}
+
+<a class="more-link" href="{{ next }}">‹ Back</a>
+<h1>{{ item.title }}</h1>
+<p class="muted">
+  {{ item.status|capitalize }}{% if item.status == 'planned' %} for {{ (item.planned_date|asdate)|daylong }}{% endif %}
+  {% set line = meta(item) %}{% if line %} · {{ line }}{% endif %}
+  {{ badges(item) }}
+</p>
+
+{% if item.status not in ('done', 'dropped') %}
+<section>
+  {% if item.size in ('project', 'big_ticket') %}
+  <h2>Next steps</h2>
+  <p class="muted">A {{ SIZE_LABELS[item.size]|lower }} can't be planned. Plan one of its next steps.</p>
+  {% if steps %}
+  <ul class="cards" data-list="steps">
+    {% for step in steps %}
+    <li class="card" data-id="{{ step.id }}">
+      <a class="card-body" draggable="false" href="/items/{{ step.id }}?next={{ here|urlencode }}">
+        <span class="card-title">{{ step.title }}</span>
+        <span class="card-meta">{{ SIZE_LABELS[step.size] }} · {{ (step.planned_date|asdate)|dayshort if step.status == 'planned' else 'Not planned' }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form class="inline" method="post" action="/items/{{ item.id }}/steps">
+    <input type="text" name="title" aria-label="Next step" placeholder="Add a next step…" required>
+    <select name="size" aria-label="Step size">
+      <option value="task">Task</option>
+      <option value="quick">Quick</option>
+    </select>
+    <button class="btn">Add</button>
+  </form>
+
+  {% elif not item.size %}
+  <h2>Plan it</h2>
+  <p class="muted">Choose a size below and save before planning it on a day.</p>
+
+  {% else %}
+  <h2>Plan it</h2>
+  <div class="daypick">
+    {% for d in plan_days %}
+    <form method="post" action="/items/{{ item.id }}/plan">
+      <input type="hidden" name="day" value="{{ d.date }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn daybtn" {{ 'disabled' if d.full }}>
+        <strong>{{ 'Today' if d.date == today else d.date|dayshort }}</strong>
+        <span>{{ d.used }}/{{ d.cap }}{{ ' full' if d.full }}</span>
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+  {% for d in plan_days if d.block %}
+  {% if loop.first %}<h3>Or into a quick block</h3><div class="daypick">{% endif %}
+    <form method="post" action="/items/{{ item.id }}/plan">
+      <input type="hidden" name="day" value="{{ d.date }}">
+      <input type="hidden" name="in_block" value="1">
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn daybtn" {{ 'disabled' if d.block_full }}>
+        <strong>{{ 'Today' if d.date == today else d.date|dayshort }}</strong>
+        <span>{{ d.block_used }}/{{ caps.quick_block_size }}{{ ' full' if d.block_full }}</span>
+      </button>
+    </form>
+  {% if loop.last %}</div>{% endif %}
+  {% endfor %}
+  <form class="inline" method="post" action="/items/{{ item.id }}/plan">
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="date" name="day" aria-label="Another day" min="{{ today }}" required>
+    <button class="btn">Plan for that day</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section>
+  <h2>Move it</h2>
+  <div class="actions">
+    {% if item.status in ('done', 'dropped') %}
+    <form method="post" action="/items/{{ item.id }}/restore"><button class="btn">Restore</button></form>
+    {% else %}
+    {% for target, label in [('backlog', 'Backlog'), ('someday', 'Someday'), ('inbox', 'Inbox')] %}
+    {% if item.status != target %}
+    <form method="post" action="/items/{{ item.id }}/status">
+      <input type="hidden" name="status" value="{{ target }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn">{{ label }}</button>
+    </form>
+    {% endif %}
+    {% endfor %}
+    <form method="post" action="/items/{{ item.id }}/toggle">
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn primary">Mark done</button>
+    </form>
+    <form method="post" action="/items/{{ item.id }}/drop">
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn">Drop</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section>
+  <h2>Details</h2>
+  <form class="stack" method="post" action="/items/{{ item.id }}/edit">
+    <label>Title <input type="text" name="title" value="{{ item.title }}" required></label>
+    <label>Size
+      <select name="size">
+        <option value="">Not sized yet</option>
+        {% for value, label in SIZE_LABELS.items() %}
+        <option value="{{ value }}" {{ 'selected' if item.size == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Kind
+      <select name="kind_id">
+        <option value="0">No kind</option>
+        {% for k in kinds %}
+        <option value="{{ k.id }}" {{ 'selected' if item.kind_id == k.id }}>{{ k.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Next step of
+      <select name="parent_id">
+        <option value="0">Not part of a project</option>
+        {% for p in projects %}
+        <option value="{{ p.id }}" {{ 'selected' if item.parent_id == p.id }}>{{ p.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Hard deadline (real external dates only)
+      <input type="date" name="hard_date" value="{{ item.hard_date or '' }}">
+    </label>
+    <label>Notes <textarea name="notes" rows="4">{{ item.notes }}</textarea></label>
+    <button class="btn primary">Save</button>
+  </form>
+  {% if item.source_ref %}<p class="muted">Imported from {{ item.source_ref }}</p>{% endif %}
+</section>
+{% endblock %}

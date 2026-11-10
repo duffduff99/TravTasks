@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import meta %}
+{# Rule 3: unfinished items from past days, one at a time. Nothing else opens until all are decided. #}
+{% block content %}
+<div class="review">
+  <p class="small-head">Left unfinished · {{ remaining }} to decide</p>
+  <h1>What happens to this one?</h1>
+
+  <div class="review-card">
+    <strong>{{ item.title }}</strong>
+    <span class="muted">{{ meta(item) }}{{ ' · ' if meta(item) }}was planned {{ (item.planned_date|asdate)|dayshort }}</span>
+    {% if item.bump_count %}
+    <span class="badge warn">Already bumped {{ item.bump_count }} time{{ 's' if item.bump_count != 1 }}</span>
+    {% endif %}
+  </div>
+
+  <form method="post" action="/review/{{ item.id }}" class="stack">
+    <button class="btn big" name="action" value="today" {{ 'disabled' if today_full }}>
+      Today{% if today_full %} <span>(today is full)</span>{% endif %}
+    </button>
+    <button class="btn big" name="action" value="backlog">Back to backlog</button>
+    <button class="btn big" name="action" value="drop">Drop it</button>
+  </form>
+
+  <form method="post" action="/review/{{ item.id }}" class="inline">
+    <input type="hidden" name="action" value="pick">
+    <input type="date" name="day" aria-label="Pick a day" min="{{ today }}" required>
+    <button class="btn primary">Pick a day</button>
+  </form>
+
+  <p class="muted center">The planner opens after {{ 'this decision' if remaining == 1 else 'these ' ~ remaining ~ ' decisions' }}. Capture still works.</p>
+</div>
+{% endblock %}

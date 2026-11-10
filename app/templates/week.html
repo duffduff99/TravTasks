@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block content %}
+
+<div class="week-head">
+  {% if previous %}
+  <a class="btn square" href="/week?start={{ previous }}" aria-label="Earlier">‹</a>
+  {% else %}
+  <span class="btn square disabled" aria-hidden="true">‹</span>
+  {% endif %}
+  <h1>{{ first|dayshort }} – {{ last|dayshort }}</h1>
+  <a class="btn square" href="/week?start={{ following }}" aria-label="Later">›</a>
+</div>
+
+<div class="week">
+  {% for day in days %}
+  {% set load = day.load %}
+  <section class="weekday {{ 'on' if day.date == today }} {{ 'full' if load.tasks >= caps.task_cap }}">
+    <a class="weekday-head" href="{{ '/today' if day.date == today else '/day/' ~ day.date }}">
+      <strong>{{ day.date|dayshort }}{{ ' · today' if day.date == today }}</strong>
+      <span class="{{ 'counter full' if load.tasks >= caps.task_cap else 'muted' }}">
+        {{ load.tasks }}/{{ caps.task_cap }} tasks · {{ load.quicks }}/{{ caps.quick_cap }} quick
+      </span>
+    </a>
+    {% if events.get(day.date) %}
+    <p class="weekday-events">
+      {% for event in events[day.date] %}{{ event.when.split(' – ')[0] }} {{ event.title }}{{ ' · ' if not loop.last }}{% endfor %}
+    </p>
+    {% endif %}
+    {# Tasks and lane quicks share one list here. The server picks the lane from the item's size. #}
+    <ul class="cards compact" data-list="day:{{ day.date }}" data-group="plan">
+      {% for item in day.tasks + day.quicks %}{{ card(item, here) }}{% endfor %}
+    </ul>
+    {% if load.has_block %}
+    <a class="chip" href="{{ '/today' if day.date == today else '/day/' ~ day.date }}">Quick block · {{ load.block_quicks }}</a>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+<section class="drawer">
+  <div class="section-head">
+    <h2>Backlog</h2>
+    <span class="muted">Drag onto a day, or tap an item to pick one</span>
+  </div>
+  <ul class="cards compact" data-list="backlog" data-group="plan">
+    {% for item in plannable %}{{ card(item, here) }}{% endfor %}
+  </ul>
+  {% if not plannable %}<p class="empty">No quick or task items in the backlog.</p>{% endif %}
+</section>
+{% endblock %}

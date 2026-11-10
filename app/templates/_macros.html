@@ -1,0 +1,44 @@
+{# Shared pieces used by several pages. #}
+
+{# The small grey line under an item title. #}
+{% macro meta(item, show_day=false) -%}
+  {%- set parts = [] -%}
+  {%- if item.parent_title %}{% set _ = parts.append('Step of ' ~ item.parent_title) %}{% endif -%}
+  {%- if item.size %}{% set _ = parts.append(SIZE_LABELS[item.size]) %}{% endif -%}
+  {%- if item.kind_name %}{% set _ = parts.append(item.kind_name) %}{% endif -%}
+  {%- if show_day and item.planned_date and item.status == 'planned' %}{% set _ = parts.append((item.planned_date|asdate)|dayshort) %}{% endif -%}
+  {{ parts|join(' · ') }}
+{%- endmacro %}
+
+{# Badges for deadline and bump count. #}
+{% macro badges(item) %}
+  {% if item.hard_date and item.status not in ('done', 'dropped') %}
+  <span class="badge warn">Due {{ (item.hard_date|asdate)|dayshort }}</span>
+  {% endif %}
+  {% if item.bump_count %}
+  <span class="badge warn">Bumped {{ item.bump_count }}</span>
+  {% endif %}
+{% endmacro %}
+
+{# One item row. check=true adds the done checkbox. Links to the item page. #}
+{% macro card(item, here, check=false, show_day=false) %}
+<li class="card {{ 'is-done fixed' if item.status == 'done' }}" data-id="{{ item.id }}">
+  {% if check %}
+  <form method="post" action="/items/{{ item.id }}/toggle">
+    <button class="check {{ 'checked' if item.status == 'done' }}"
+            aria-label="{{ 'Mark not done' if item.status == 'done' else 'Mark done' }}: {{ item.title }}"></button>
+  </form>
+  {% endif %}
+  <a class="card-body" draggable="false" href="/items/{{ item.id }}?next={{ here|urlencode }}">
+    <span class="card-title">{{ item.title }}</span>
+    {% set line = meta(item, show_day) %}
+    {% if line %}<span class="card-meta">{{ line }}</span>{% endif %}
+  </a>
+  {{ badges(item) }}
+</li>
+{% endmacro %}
+
+{# "2 of 3" style counter that turns amber when full. #}
+{% macro counter(used, cap, noun='') %}
+<span class="counter {{ 'full' if used >= cap }}">{{ used }} of {{ cap }}{{ ' ' ~ noun if noun }}{{ ' · full' if used >= cap }}</span>
+{% endmacro %}

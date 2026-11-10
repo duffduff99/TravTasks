@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card, counter %}
+{% block content %}
+{% set load = view.load %}
+{% set day = view.date %}
+
+<h1>{{ day|daylong }}{% if not is_today %} <a class="more-link" href="/week">Week</a>{% endif %}</h1>
+
+{% if events %}
+<section>
+  <h2 class="small-head">Calendar</h2>
+  <ul class="events">
+    {% for event in events %}
+    <li><span class="when">{{ event.when }}</span><span>{{ event.title }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section>
+  <div class="section-head">
+    <h2>Tasks</h2>
+    {{ counter(load.tasks, caps.task_cap) }}
+  </div>
+  <ul class="cards" data-list="day:{{ day }}:tasks" data-group="day">
+    {% for item in view.tasks %}{{ card(item, here, check=true) }}{% endfor %}
+  </ul>
+
+  {% if load.has_block %}
+  <div class="block">
+    <div class="section-head">
+      <strong>Quick block</strong>
+      <span class="muted">{{ load.block_quicks }} of {{ caps.quick_block_size }} · uses 1 task slot</span>
+    </div>
+    <ul class="cards inner" data-list="day:{{ day }}:block" data-group="day">
+      {% for item in view.block %}{{ card(item, here, check=true) }}{% endfor %}
+    </ul>
+    {% if not view.block %}<p class="empty">Drag quicks here, or open a quick item and choose this block.</p>{% endif %}
+    <form method="post" action="/day/{{ day }}/block/remove">
+      <button class="linkbtn">Remove quick block</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% set open_slots = caps.task_cap - load.tasks %}
+  {% if open_slots > 0 %}
+  <p class="slot">{{ open_slots }} open task slot{{ 's' if open_slots != 1 }}</p>
+  {% if not load.has_block %}
+  <form method="post" action="/day/{{ day }}/block">
+    <button class="btn">Add a quick block (uses 1 task slot)</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Quick lane</h2>
+    {{ counter(load.quicks, caps.quick_cap) }}
+  </div>
+  <ul class="cards" data-list="day:{{ day }}:quick" data-group="day">
+    {% for item in view.quicks %}{{ card(item, here, check=true) }}{% endfor %}
+  </ul>
+  {% set open_quicks = caps.quick_cap - load.quicks %}
+  {% if open_quicks > 0 %}
+  <p class="slot">{{ open_quicks }} open quick slot{{ 's' if open_quicks != 1 }}</p>
+  {% endif %}
+</section>
+
+{% if not view.tasks and not view.quicks and not view.block %}
+<p class="empty">Nothing is planned for this day. Plan from <a href="/week">Week</a> or <a href="/backlog">Backlog</a>.</p>
+{% endif %}
+{% endblock %}
