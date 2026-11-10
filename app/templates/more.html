@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>More</h1>
+<ul class="cards menu">
+  <li class="card"><a class="card-body" href="/backlog?status=someday"><span class="card-title">Someday</span><span class="card-meta">{{ counts.someday }} items</span></a></li>
+  <li class="card"><a class="card-body" href="/done"><span class="card-title">Done log</span></a></li>
+  <li class="card"><a class="card-body" href="/settings"><span class="card-title">Settings</span><span class="card-meta">Limits, kinds, calendars, API token, password</span></a></li>
+</ul>
+<form method="post" action="/logout" hx-boost="false">
+  <button class="btn">Log out</button>
+</form>
+{% endblock %}

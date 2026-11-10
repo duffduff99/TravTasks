@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card, meta, badges %}
+{% block content %}
+
+<div class="segmented">
+  <a href="/backlog" class="{{ 'on' if status == 'backlog' }}">Backlog {{ counts.backlog }}</a>
+  <a href="/backlog?status=someday" class="{{ 'on' if status == 'someday' }}">Someday {{ counts.someday }}</a>
+</div>
+
+<form class="filters" method="get" action="/backlog">
+  <input type="hidden" name="status" value="{{ status }}">
+  <label>Size
+    <select name="size" onchange="this.form.requestSubmit()">
+      <option value="">All sizes</option>
+      {% for value, label in SIZE_LABELS.items() %}
+      <option value="{{ value }}" {{ 'selected' if size == value }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Kind
+    <select name="kind" onchange="this.form.requestSubmit()">
+      <option value="0">All kinds</option>
+      {% for k in kinds %}
+      <option value="{{ k.id }}" {{ 'selected' if kind == k.id }}>{{ k.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if items %}
+<ul class="cards" {% if sortable %}data-list="{{ status }}"{% endif %}>
+  {% for item in items %}
+  {% if item.size in ('project', 'big_ticket') %}
+  <li class="card project" data-id="{{ item.id }}">
+    <div class="project-head">
+      <a class="card-body" draggable="false" href="/items/{{ item.id }}?next={{ here|urlencode }}">
+        <span class="card-title strong">{{ item.title }}</span>
+        <span class="card-meta">{{ meta(item) }}</span>
+      </a>
+      {% if item.id in active_ids %}<span class="badge good">Active</span>{% endif %}
+      {{ badges(item) }}
+    </div>
+    {% if steps[item.id] %}
+    <ul class="steps">
+      {% for step in steps[item.id] %}
+      <li>
+        <a draggable="false" href="/items/{{ step.id }}?next={{ here|urlencode }}">{{ step.title }}</a>
+        <span class="muted">{{ (step.planned_date|asdate)|dayshort if step.status == 'planned' else 'Not planned' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="card-meta">Can't be planned itself. Add a next step to start.</p>
+    {% endif %}
+    <form class="inline" method="post" action="/items/{{ item.id }}/steps">
+      <input type="text" name="title" aria-label="Next step for {{ item.title }}" placeholder="Add a next step…" required>
+      <button class="btn">Add</button>
+    </form>
+  </li>
+  {% else %}
+  {{ card(item, here) }}
+  {% endif %}
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Nothing here{{ ' with these filters' if size or kind }}.</p>
+{% endif %}
+{% endblock %}

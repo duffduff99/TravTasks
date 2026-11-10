@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+
+<section>
+  <h2>Limits</h2>
+  <form class="stack" method="post" action="/settings/general">
+    <label>Tasks per day <input type="number" name="task_cap" value="{{ values.task_cap }}" min="1" max="10" required></label>
+    <label>Quick lane items per day <input type="number" name="quick_cap" value="{{ values.quick_cap }}" min="0" max="20" required></label>
+    <label>Quicks in one quick block <input type="number" name="quick_block_size" value="{{ values.quick_block_size }}" min="1" max="30" required></label>
+    <label>Active projects at once <input type="number" name="max_active_projects" value="{{ values.max_active_projects }}" min="1" max="10" required></label>
+    <label>The day rolls over at this hour (0–12) <input type="number" name="rollover_hour" value="{{ values.rollover_hour }}" min="0" max="12" required></label>
+    <label>Timezone <input type="text" name="timezone" value="{{ values.timezone }}" required></label>
+    <label>Allow embedding from (Home Assistant address)
+      <input type="text" name="iframe_origin" value="{{ values.iframe_origin }}" placeholder="https://ha.example.com">
+    </label>
+    <button class="btn primary">Save</button>
+  </form>
+</section>
+
+<section>
+  <h2>Kinds</h2>
+  <ul class="cards" data-list="kinds">
+    {% for k in kinds %}
+    <li class="card kind" data-id="{{ k.id }}">
+      <form class="inline" method="post" action="/settings/kinds/{{ k.id }}/rename">
+        <input type="text" name="name" value="{{ k.name }}" aria-label="Kind name" required>
+        <button class="btn">Rename</button>
+      </form>
+      <form class="inline" method="post" action="/settings/kinds/{{ k.id }}/delete">
+        {% if k.item_count %}
+        <select name="move_to" aria-label="Move {{ k.item_count }} items to" required>
+          <option value="">Move {{ k.item_count }} item{{ 's' if k.item_count != 1 }} to…</option>
+          {% for other in kinds if other.id != k.id %}
+          <option value="{{ other.id }}">{{ other.name }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <button class="btn">Delete</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <form class="inline" method="post" action="/settings/kinds">
+    <input type="text" name="name" aria-label="New kind" placeholder="New kind…" required>
+    <button class="btn">Add kind</button>
+  </form>
+</section>
+
+<section>
+  <h2>Calendars</h2>
+  <p class="muted">Read-only ICS feeds, refreshed every 15 minutes. A link is never shown again after you save it.</p>
+  <ul class="cards">
+    {% for feed in feeds %}
+    <li class="card kind">
+      <strong>{{ feed.label }}</strong>
+      <form class="inline" method="post" action="/settings/feeds/{{ feed.id }}/mode">
+        <select name="mode" aria-label="What to show for {{ feed.label }}" onchange="this.form.requestSubmit()">
+          <option value="full" {{ 'selected' if feed.mode == 'full' }}>Show event titles</option>
+          <option value="busy_only" {{ 'selected' if feed.mode == 'busy_only' }}>Show only "Busy"</option>
+        </select>
+      </form>
+      <form method="post" action="/settings/feeds/{{ feed.id }}/delete">
+        <button class="btn">Remove</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <form class="stack" method="post" action="/settings/feeds">
+    <label>Name <input type="text" name="label" placeholder="Family" required></label>
+    <label>ICS link <input type="password" name="url" autocomplete="off" placeholder="https://…" required></label>
+    <label>Show
+      <select name="mode">
+        <option value="busy_only">Only "Busy"</option>
+        <option value="full">Event titles</option>
+      </select>
+    </label>
+    <button class="btn">Add calendar</button>
+  </form>
+</section>
+
+<section>
+  <h2>API token</h2>
+  <p class="muted">For phone shortcuts and Home Assistant. Send it as <code>Authorization: Bearer …</code></p>
+  <input type="text" readonly value="{{ values.api_token }}" aria-label="API token" onfocus="this.select()">
+  <pre>POST {{ base_url }}/api/capture
+     {"title": "Buy furnace filter"}
+GET  {{ base_url }}/api/today</pre>
+  <form method="post" action="/settings/token">
+    <button class="btn">Create a new token</button>
+  </form>
+</section>
+
+<section>
+  <h2>Password</h2>
+  <form class="stack" method="post" action="/settings/password">
+    <label>Current password <input type="password" name="current" autocomplete="current-password" required></label>
+    <label>New password <input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+    <label>New password again <input type="password" name="confirm" autocomplete="new-password" minlength="8" required></label>
+    <button class="btn">Change password</button>
+  </form>
+</section>
+{% endblock %}

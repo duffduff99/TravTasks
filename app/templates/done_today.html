@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{# Rule 4: when today is finished, show only this. No backlog, no suggestions. #}
+{% block content %}
+<div class="done-screen">
+  <div class="done-mark" aria-hidden="true">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+  </div>
+  <h1>Done for today.</h1>
+  <p class="muted">
+    {{ tasks_done }} task{{ 's' if tasks_done != 1 }} and {{ quicks_done }} quick{{ 's' if quicks_done != 1 }} finished.<br>
+    Nothing else is on today's list.
+  </p>
+  <form method="post" action="/today/reopen">
+    <button class="linkbtn quiet">Reopen today</button>
+  </form>
+</div>
+{% endblock %}

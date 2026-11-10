@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}TravTasks{% endblock %}</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1F6F63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TravTasks">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/vendor/htmx.min.js" defer></script>
+<script src="/static/vendor/Sortable.min.js" defer></script>
+<script src="/static/app.js" defer></script>
+</head>
+{# bare = login and review screens: no navigation. wide = week view on big screens. #}
+<body hx-boost="true" class="{{ 'wide' if wide }}">
+{% if not bare or capture_box %}
+<header class="capture">
+  <form action="/capture" method="post" hx-post="/capture" hx-swap="none" hx-boost="false"
+        hx-on::after-request="this.reset()">
+    <input type="text" name="title" aria-label="Capture" placeholder="Capture anything…"
+           autocomplete="off" enterkeyhint="done" required>
+    <button class="btn primary">Add</button>
+  </form>
+</header>
+{% endif %}
+<main id="main">
+  <div id="flash" aria-live="polite">
+    {% for level, message in flashes %}
+    <p class="flash {{ level }}" {% if level == 'error' %}role="alert"{% endif %}>{{ message }}</p>
+    {% endfor %}
+  </div>
+  {% block content %}{% endblock %}
+</main>
+{% if not bare %}
+<nav class="tabs" aria-label="Main">
+  <a href="/" class="{{ 'on' if nav == 'overview' }}">Overview</a>
+  <a href="/today" class="{{ 'on' if nav == 'today' }}">Today</a>
+  <a href="/week" class="{{ 'on' if nav == 'week' }}">Week</a>
+  <a href="/backlog" class="{{ 'on' if nav == 'backlog' }}">Backlog</a>
+  <a href="/more" class="{{ 'on' if nav == 'more' }}">More</a>
+</nav>
+{% endif %}
+</body>
+</html>

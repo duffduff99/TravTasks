@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import meta %}
+{% block content %}
+<div class="segmented">
+  <a href="/done" class="{{ 'on' if show == 'done' }}">Done</a>
+  <a href="/done?show=dropped" class="{{ 'on' if show == 'dropped' }}">Dropped</a>
+</div>
+
+{% for group in groups %}
+<section>
+  <h2 class="small-head">{{ group.date|daylong if group.date else 'Earlier' }} · {{ group['items']|length }}</h2>
+  <ul class="cards">
+    {% for item in group['items'] %}
+    <li class="card">
+      <a class="card-body" href="/items/{{ item.id }}?next={{ here|urlencode }}">
+        <span class="card-title">{{ item.title }}</span>
+        {% set line = meta(item) %}{% if line %}<span class="card-meta">{{ line }}</span>{% endif %}
+      </a>
+      <form method="post" action="/items/{{ item.id }}/restore">
+        <button class="linkbtn">Restore</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<p class="empty">Nothing {{ show }} yet.</p>
+{% endfor %}
+{% endblock %}

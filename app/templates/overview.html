@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card, meta %}
+{% block content %}
+
+<section>
+  <div class="section-head">
+    <h2>This week</h2>
+    <a href="/week">Plan the week</a>
+  </div>
+  <div class="strip">
+    {% for day in days %}
+    <a href="{{ '/today' if day.date == today else '/day/' ~ day.date }}"
+       class="strip-day {{ 'on' if day.date == today }}"
+       aria-label="{{ day.date|daylong }}: {{ day.load.tasks }} of {{ caps.task_cap }} tasks, {{ day.load.quicks }} quicks">
+      <span>{{ day.date|dayname }}</span>
+      <strong>{{ day.date.day }}</strong>
+      <span>{{ day.load.tasks }}/{{ caps.task_cap }}</span>
+      <span>{{ day.load.quicks }}q</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Inbox</h2>
+    <span class="muted">{{ inbox_total }} to triage</span>
+  </div>
+  {% if inbox_items %}
+  <ul class="cards" data-list="inbox">
+    {% for item in inbox_items %}{{ card(item, here) }}{% endfor %}
+  </ul>
+  {% if inbox_total > inbox_items|length %}
+  <a class="more-link" href="/?inbox=all">Show {{ inbox_total - inbox_items|length }} more</a>
+  {% endif %}
+  {% else %}
+  <p class="empty">Inbox is empty.</p>
+  {% endif %}
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Active projects</h2>
+    <span class="muted">{{ projects|length }} of {{ caps.max_active_projects }}</span>
+  </div>
+  {% if projects %}
+  <ul class="cards">
+    {% for entry in projects %}
+    <li class="card">
+      <a class="card-body" href="/items/{{ entry.project.id }}?next={{ here|urlencode }}">
+        <span class="card-title strong">{{ entry.project.title }}</span>
+        {% if entry.next %}
+        <span class="card-meta">Next: {{ entry.next.title }} · {{ (entry.next.planned_date|asdate)|dayshort }}</span>
+        {% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">No project has a planned step.</p>
+  {% endif %}
+</section>
+
+{% if deadlines %}
+<section>
+  <div class="section-head"><h2>Deadlines, next 14 days</h2></div>
+  <ul class="cards">
+    {% for item in deadlines %}
+    <li class="card deadline">
+      <a class="card-body" href="/items/{{ item.id }}?next={{ here|urlencode }}">
+        <span class="card-title">{{ item.title }}</span>
+        <span class="card-meta">{{ 'Planned ' ~ ((item.planned_date|asdate)|dayshort) if item.status == 'planned' else 'Not planned' }}</span>
+      </a>
+      <strong>{{ (item.hard_date|asdate)|dayshort }}</strong>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<p><a class="more-link" href="/backlog">Backlog {{ counts.backlog }}</a> · <a class="more-link" href="/backlog?status=someday">Someday {{ counts.someday }}</a></p>
+{% endblock %}
